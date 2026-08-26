@@ -1,4 +1,6 @@
-import { Decoder, Encoder, Profile, Stream } from '@garmin/fitsdk';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { Decoder, Encoder, Profile, Stream, Utils } from '@garmin/fitsdk';
 import { describe, expect, it } from 'vitest';
 import {
   EDGE_1030_PLUS_PRODUCT_ID,
@@ -154,5 +156,57 @@ describe('modifyFitDevice', () => {
 
   it('rejects non-FIT bytes', () => {
     expect(() => modifyFitDevice(new Uint8Array([1, 2, 3, 4]))).toThrow(/not a FIT/i);
+  });
+
+  it('rewrites MyWhoosh files that include developer fields', () => {
+    const developerDataIdMesg = {
+      developerDataIndex: 0,
+      applicationId: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    };
+    const fieldDescriptionMesg = {
+      developerDataIndex: 0,
+      fieldDefinitionNumber: 0,
+      fitBaseTypeId: Utils.FitBaseType.FLOAT32,
+      fieldName: 'doughnuts',
+      units: 'count'
+    };
+    const encoder = new Encoder();
+    encoder.addDeveloperField(0, developerDataIdMesg, fieldDescriptionMesg);
+    encoder.onMesg(Profile.MesgNum.FILE_ID, {
+      type: 'activity',
+      manufacturer: 'mywhoosh',
+      product: 3570,
+      timeCreated: new Date('2026-08-01T10:00:00Z')
+    });
+    encoder.onMesg(Profile.MesgNum.DEVELOPER_DATA_ID, developerDataIdMesg);
+    encoder.onMesg(Profile.MesgNum.FIELD_DESCRIPTION, fieldDescriptionMesg);
+    encoder.onMesg(Profile.MesgNum.SESSION, {
+      timestamp: new Date('2026-08-01T10:30:00Z'),
+      sport: 'cycling',
+      totalTimerTime: 1800,
+      developerFields: { 0: 3.5 }
+    });
+
+    const result = modifyFitDevice(encoder.close());
+    const decoded = decodeDevice(result.bytes);
+
+    expect(result.changed).toBe(true);
+    expect(result.action).toBe('patched-mywhoosh');
+    expect(decoded.fileId?.manufacturer).toBe('garmin');
+    expect(decoded.fileId?.product).toBe(EDGE_1030_PLUS_PRODUCT_ID);
+  });
+
+  it('rewrites a real MyWhoosh activity export', () => {
+    const input = new Uint8Array(
+      readFileSync(resolve(process.cwd(), 'tests/fixtures/mywhoosh_20260111.fit'))
+    );
+    const result = modifyFitDevice(input);
+    const decoded = decodeDevice(result.bytes);
+
+    expect(result.changed).toBe(true);
+    expect(result.action).toBe('patched-mywhoosh');
+    expect(decoded.fileId?.manufacturer).toBe('garmin');
+    expect(decoded.fileId?.product).toBe(EDGE_1030_PLUS_PRODUCT_ID);
+    expect(result.bytes.length).toBeGreaterThan(1000);
   });
 });

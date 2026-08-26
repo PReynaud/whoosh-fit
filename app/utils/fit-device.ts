@@ -1,5 +1,5 @@
 import { Decoder, Encoder, Profile, Stream } from '@garmin/fitsdk';
-import type { Mesg } from '@garmin/fitsdk';
+import type { DeveloperDataIdMesg, FieldDescriptionMesg, Mesg } from '@garmin/fitsdk';
 
 interface DeviceMesg extends Mesg {
   manufacturer?: string | number;
@@ -41,6 +41,14 @@ export interface FitModifyResult {
 interface CollectedMesg {
   mesgNum: number;
   mesg: DeviceMesg;
+}
+
+interface CollectedFit {
+  messages: CollectedMesg[];
+  fieldDescriptions: Record<number, {
+    developerDataIdMesg: DeveloperDataIdMesg;
+    fieldDescriptionMesg: FieldDescriptionMesg;
+  }>;
 }
 
 function manufacturerKey(value: unknown): string {
@@ -112,7 +120,7 @@ function streamFromBytes(bytes: Uint8Array): Stream {
   return Stream.fromByteArray(Array.from(bytes));
 }
 
-function collectMessages(bytes: Uint8Array): CollectedMesg[] {
+function collectMessages(bytes: Uint8Array): CollectedFit {
   const stream = streamFromBytes(bytes);
 
   if (!Decoder.isFIT(stream)) {
@@ -120,7 +128,8 @@ function collectMessages(bytes: Uint8Array): CollectedMesg[] {
   }
 
   const decoder = new Decoder(stream);
-  const collected: CollectedMesg[] = [];
+  const messages: CollectedMesg[] = [];
+  const fieldDescriptions: CollectedFit['fieldDescriptions'] = {};
   const { errors } = decoder.read({
     applyScaleAndOffset: true,
     expandSubFields: false,
@@ -128,17 +137,23 @@ function collectMessages(bytes: Uint8Array): CollectedMesg[] {
     mergeHeartRates: false,
     convertTypesToStrings: true,
     convertDateTimesToDates: true,
+    fieldDescriptionListener: (key, developerDataIdMesg, fieldDescriptionMesg) => {
+      fieldDescriptions[Number(key)] = {
+        developerDataIdMesg,
+        fieldDescriptionMesg
+      };
+    },
     mesgListener: (mesgNum: number, mesg: Mesg) => {
-      collected.push({ mesgNum, mesg: mesg as DeviceMesg });
+      messages.push({ mesgNum, mesg: mesg as DeviceMesg });
     }
   });
 
-  if (collected.length === 0) {
+  if (messages.length === 0) {
     const detail = errors[0]?.message;
     throw new Error(detail ? `Could not read this FIT file: ${detail}` : 'Could not read this FIT file.');
   }
 
-  return collected;
+  return { messages, fieldDescriptions };
 }
 
 function deviceFromMessages(messages: CollectedMesg[]): FitDeviceSummary | null {
@@ -181,18 +196,34 @@ function applyTargetDevice(mesg: DeviceMesg): DeviceMesg {
   };
 }
 
-function encodeMessages(messages: CollectedMesg[]): Uint8Array {
-  const encoder = new Encoder();
+function encodeMessages(
+  messages: CollectedMesg[],
+  fieldDescriptions: CollectedFit['fieldDescriptions']
+): Uint8Array {
+  const encoder = new Encoder({ fieldDescriptions });
 
   for (const item of messages) {
-    encoder.onMesg(item.mesgNum, item.mesg);
+    if (Profile.messages[item.mesgNum] == null) {
+      continue;
+    }
+
+    try {
+      encoder.onMesg(item.mesgNum, item.mesg);
+    } catch (error: unknown) {
+      if (item.mesg.developerFields == null) {
+        throw error;
+      }
+
+      const { developerFields: _developerFields, ...withoutDeveloperFields } = item.mesg;
+      encoder.onMesg(item.mesgNum, withoutDeveloperFields);
+    }
   }
 
   return encoder.close();
 }
 
 export function modifyFitDevice(bytes: Uint8Array): FitModifyResult {
-  const messages = collectMessages(bytes);
+  const { messages, fieldDescriptions } = collectMessages(bytes);
   const previousDevice = deviceFromMessages(messages);
   const action = decideAction(messages);
 
@@ -231,7 +262,7 @@ export function modifyFitDevice(bytes: Uint8Array): FitModifyResult {
     });
   }
 
-  const bytesOut = encodeMessages(patched);
+  const bytesOut = encodeMessages(patched, fieldDescriptions);
 
   return {
     action,

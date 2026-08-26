@@ -14,4 +14,18 @@ describe('getErrorMessage', () => {
     expect(getErrorMessage({ code: 1 }, 'fallback')).toBe('fallback');
     expect(getErrorMessage(null, 'fallback')).toBe('fallback');
   });
+
+  it('joins nested FIT encoder causes', () => {
+    const error = new Error('Could not write Message', {
+      cause: {
+        cause: {
+          message: 'Could not construct MesgDefinition from Message'
+        }
+      }
+    });
+
+    expect(getErrorMessage(error, 'fallback')).toBe(
+      'Could not write Message — Could not construct MesgDefinition from Message'
+    );
+  });
 });
