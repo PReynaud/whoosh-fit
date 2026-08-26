@@ -3,7 +3,7 @@ import { useHead, useSeoMeta, useRuntimeConfig } from '#imports';
 
 const config = useRuntimeConfig();
 const title = config.public.appName;
-const description = 'A Nuxt app with Supabase authentication.';
+const description = 'Patch MyWhoosh FIT files to Garmin Edge 1030 Plus and send them to Garmin Connect.';
 
 useHead({
   meta: [

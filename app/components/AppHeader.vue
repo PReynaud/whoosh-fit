@@ -38,14 +38,6 @@ const authStore = useAuthStore();
         variant="ghost"
         @click="authStore.signOut()"
       />
-
-      <UButton
-        v-else
-        to="/login"
-        label="Sign in"
-        color="neutral"
-        variant="ghost"
-      />
     </template>
   </UHeader>
 </template>

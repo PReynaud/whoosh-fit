@@ -22,7 +22,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      appName: 'App'
+      appName: 'WhooshFit'
     }
   },
 
@@ -45,10 +45,10 @@ export default defineNuxtConfig({
   pwa: {
     registerType: 'autoUpdate',
     manifest: {
-      name: 'App',
-      short_name: 'App',
-      description: 'Nuxt app template with Supabase auth.',
-      theme_color: '#0f766e',
+      name: 'WhooshFit',
+      short_name: 'WhooshFit',
+      description: 'Patch MyWhoosh FIT files to Garmin Edge 1030 Plus.',
+      theme_color: '#ea580c',
       background_color: '#ffffff',
       display: 'standalone',
       orientation: 'portrait',

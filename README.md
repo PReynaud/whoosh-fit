@@ -1,14 +1,25 @@
-# Nuxt app template
+# WhooshFit
 
-GitHub Template used by [software-factory](https://github.com/PReynaud/software-factory) to spawn new Nuxt 4 apps.
+Patch [MyWhoosh](https://event.mywhoosh.com/user/activities) `.fit` files so Garmin Connect treats them as a **Garmin Edge 1030 Plus**, then import them on [Garmin Connect](https://connect.garmin.com/modern/import-data).
+
+Live: https://whoosh-fit.pierre-reynaud.fr
+
+## What it does
+
+1. You download the activity from MyWhoosh (no public API, so this stays manual).
+2. Drop the `.fit` or `.dms` file on the page. The device field is rewritten **in the browser** with the same Garmin manufacturer / Edge 1030 Plus product id as `modifier-fit.bat`.
+3. The patched file downloads automatically. Open Garmin Connect import while signed in and drop that file.
+
+Garmin Connect cannot receive the file automatically from this site. The import page lives on `connect.garmin.com`; the browser will not send those cookies to this app.
+
+There is **no hosted Supabase project**. Local Supabase remains only so template auth e2e still runs.
 
 ## Stack
 
 - Nuxt 4, Nuxt UI 4, Pinia
-- Supabase (SQL migrations + RLS + Auth)
+- `@garmin/fitsdk` (client-side decode / encode)
 - Playwright (local Supabase only) and Vitest
-- BMAD Method, Cursor rules, MCP (Nuxt, Nuxt UI, Playwright, Supabase, Vercel)
-- PWA via `@vite-pwa/nuxt` (remove with `factory-new-app --no-pwa`)
+- PWA via `@vite-pwa/nuxt`
 
 ## Setup
 
@@ -22,15 +33,7 @@ pnpm pwa:icons
 pnpm dev
 ```
 
-Add `http://localhost:3000/confirm` to the local Supabase Auth redirect URLs.
-
-## Production migrations
-
-On push to `main` (paths under `supabase/migrations/**`), `.github/workflows/deploy-migrations.yml` runs `supabase db push --db-url`. Set the repo secret `SUPABASE_DB_URL` to the direct Postgres URI:
-
-`postgresql://postgres:{password}@db.{project_ref}.supabase.co:5432/postgres`
-
-(`factory-new-app` sets this during bootstrap.) Never commit the URI. Do not push `seed.sql` to production.
+Local auth pages still work against local Supabase. Production does not use them.
 
 ## Tests
 
@@ -43,12 +46,6 @@ pnpm test:e2e
 
 A pre-commit hook runs `eslint --fix` on staged JS/TS/Vue files. Do not skip it with `--no-verify`.
 
-Playwright refuses non-local Supabase URLs. Create accounts per test; they are deleted afterwards.
-
 ## Language
 
 Conversation may be English or French. All produced artifacts are English.
-
-## Create a new app
-
-Use the `factory-new-app` skill in `software-factory`. Do not copy this repo by hand if you need DNS, Vercel, and a Supabase project.

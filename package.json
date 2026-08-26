@@ -1,5 +1,5 @@
 {
-  "name": "app",
+  "name": "whoosh-fit",
   "private": true,
   "type": "module",
   "scripts": {
@@ -24,6 +24,7 @@
     "secret-scan": "node scripts/secret-scan.mjs"
   },
   "dependencies": {
+    "@garmin/fitsdk": "^21.214.0",
     "@iconify-json/lucide": "^1.2.117",
     "@nuxt/ui": "^4.10.0",
     "@nuxtjs/supabase": "2.0.9",

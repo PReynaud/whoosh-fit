@@ -1,10 +1,10 @@
 import { defineAppConfig } from '#imports';
 
 export default defineAppConfig({
-  name: 'App',
+  name: 'WhooshFit',
   ui: {
     colors: {
-      primary: 'green',
+      primary: 'orange',
       neutral: 'slate'
     }
   }
