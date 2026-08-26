@@ -14,8 +14,8 @@ This document guides agents working in apps generated from `nuxt-app-template`.
 | Framework | Nuxt 4, Vue 3 Composition API |
 | UI | Nuxt UI 4 (`UButton`, `UCard`, …) |
 | State | Pinia setup stores |
-| Database | PostgreSQL via Supabase (`supabase/migrations`, RLS) |
-| Auth | Supabase Auth via `@nuxtjs/supabase` |
+| Database | None hosted. Local Supabase stays in the template for auth e2e only. |
+| Auth | Unused in production. FIT conversion is anonymous and client-side. |
 | Tests | Vitest (`tests/unit`) and Playwright (`tests/e2e`) |
 | Package manager | pnpm |
 
