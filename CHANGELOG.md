@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Keep MyWhoosh developer fields when rewriting the FIT so real activity exports no longer fail with "Could not write Message".
+- Surface nested FIT encoder errors in the UI when a file still cannot be rewritten.
 - WhooshFit: drop a MyWhoosh FIT file, rewrite the device as Garmin Edge 1030 Plus, download it, and open Garmin Connect import.
 - No hosted Supabase project; conversion runs entirely in the browser.
 
